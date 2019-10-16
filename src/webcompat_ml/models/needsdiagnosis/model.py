@@ -1,11 +1,13 @@
 import numpy
 import pandas
+import spacy
 
 from sklearn.base import ClassifierMixin, BaseEstimator, TransformerMixin
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.metrics import classification_report, confusion_matrix
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelEncoder
+from spacy.lang.en import English
 from xgboost import XGBClassifier
 
 
@@ -37,14 +39,28 @@ class NeedsDiagnosisModel(BaseEstimator, TransformerMixin, ClassifierMixin):
 
         """
 
-        corpus = pandas.concat([X["body"], X["title"]], axis=0).tolist()
-        self.tokenizer = CountVectorizer(max_features=10000)
-        self.tokenizer.fit(corpus)
+        nlp = spacy.load("en_core_web_sm")
+        parser = English()
+
+        def _spacy_tokenizer(sentence):
+            tokens = parser(sentence)
+            tokens = [token for token in tokens if not token.is_stop]
+            tokens = [token.lemma_ for token in tokens]
+            return tokens
+
+        self.body_tokenizer = CountVectorizer(
+            tokenizer=_spacy_tokenizer, max_features=10000
+        )
+        self.title_tokenizer = CountVectorizer(
+            tokenizer=_spacy_tokenizer, max_features=10000
+        )
+        self.body_tokenizer.fit(X["body"])
+        self.title_tokenizer.fit(X["title"])
+        body = self.body_tokenizer.transform(X["body"].values).toarray()
+        title = self.title_tokenizer.transform(X["title"].values).toarray()
+        X = numpy.hstack([body, title])
 
         needsdiagnosis = self.le.fit_transform(y["needsdiagnosis"])
-        body = self.tokenizer.transform(X["body"].values).toarray()
-        title = self.tokenizer.transform(X["title"].values).toarray()
-        X = numpy.hstack([body, title])
         y = needsdiagnosis
         return (X, y)
 
