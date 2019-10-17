@@ -89,13 +89,13 @@ class NeedsDiagnosisModel(BaseEstimator, TransformerMixin, ClassifierMixin):
 
     def predict(self, X):
         """Predict needsdiagnosis flags"""
-        body = self.tokenizer.transform(X["body"].values).toarray()
-        title = self.tokenizer.transform(X["title"].values).toarray()
+        body = self.body_tokenizer.transform(X["body"].values).toarray()
+        title = self.title_tokenizer.transform(X["title"].values).toarray()
         X = numpy.hstack([body, title])
         return self.clf.predict(X)
 
     def predict_proba(self, X):
-        body = self.tokenizer.transform(X["body"].values).toarray()
-        title = self.tokenizer.transform(X["title"].values).toarray()
+        body = self.body_tokenizer.transform(X["body"].values).toarray()
+        title = self.title_tokenizer.transform(X["title"].values).toarray()
         X = numpy.hstack([body, title])
         return self.clf.predict_proba(X)
